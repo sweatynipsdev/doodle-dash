@@ -106,12 +106,14 @@
 </head>
 <body>
     <h2>Doodle Dash</h2>
-    <div id="characterSelect">
-        <button id="leftArrow" class="arrow-btn"><</button>
-        <div id="currentCharacter" class="character"></div>
-        <button id="rightArrow" class="arrow-btn">></button>
+    <div style="display: flex; justify-content: space-between; width: 600px;">
+        <div id="characterSelect">
+            <button id="leftArrow" class="arrow-btn"><</button>
+            <div id="currentCharacter" class="character"></div>
+            <button id="rightArrow" class="arrow-btn">></button>
+        </div>
+        <div id="highScores" style="background: rgba(0, 0, 0, 0.6); padding: 10px; border: 2px solid #ffcc00; border-radius: 10px; width: 150px; height: 200px; overflow-y: auto; color: #ffcc00; font-size: 14px; font-family: 'Press Start 2P', Arial, sans-serif; text-align: left;"></div>
     </div>
-    <div id="highScores" style="color: #ffcc00; font-size: 16px; margin-top: 10px;"></div>
     <button id="startBtn" disabled>Start Game</button>
     <canvas id="gameCanvas" width="400" height="600" style="display: none;"></canvas>
     <button id="restartBtn" style="display: none;">Play Again</button>
@@ -228,7 +230,15 @@
 
         function displayHighScores() {
             const highScoresDiv = document.getElementById('highScores');
-            highScoresDiv.innerHTML = 'High Scores: ' + (highScores.length ? highScores.map((s, i) => `${i + 1}. ${s}`).join(', ') : 'No scores yet');
+            if (highScores.length === 0) {
+                highScoresDiv.innerHTML = 'High Scores:<br>No scores yet';
+            } else {
+                highScoresDiv.innerHTML = 'High Scores:<br>';
+                highScores.slice(0, 5).forEach((score, index) => {
+                    const rank = ['1st', '2nd', '3rd', '4th', '5th'][index];
+                    highScoresDiv.innerHTML += `${rank} ${score}<br>`;
+                });
+            }
         }
 
         function cycleLeft() {
