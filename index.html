@@ -480,8 +480,8 @@
             if (doublePointsActive || homingActive || slowdownActive || shieldHealth > 0) {
                 const flicker = 1 + Math.random() * 0.6;
                 const numSpikes = 12;
-                const baseRadius = 15;
-                const spikeLength = 6;
+                const baseRadius = 25; // Increased from 15 to 25
+                const spikeLength = 8; // Increased from 6 to 8
 
                 gameCtx.beginPath();
                 for (let i = 0; i < numSpikes; i++) {
@@ -893,27 +893,39 @@
                 }
             }
 
-            gameCtx.font = '40px Press Start 2P';
+            gameCtx.font = '48px Press Start 2P'; // Increased from 40px to 48px
             gameCtx.fillStyle = '#ffcc00';
             gameCtx.textAlign = 'left';
             gameCtx.textBaseline = 'top';
+            // Add shadow for better readability
+            gameCtx.shadowColor = 'black';
+            gameCtx.shadowOffsetX = 2;
+            gameCtx.shadowOffsetY = 2;
+            gameCtx.shadowBlur = 4;
             gameCtx.fillText(`Score: ${score}`, 10, 10);
-            gameCtx.font = '20px Press Start 2P';
+            gameCtx.font = '28px Press Start 2P'; // Increased from 20px to 28px
             gameCtx.fillText(`Combo: ${combo} (x${comboMultiplier})`, 10, 50);
             let yOffset = 130;
             if (doublePointsActive) {
-                gameCtx.font = '40px Press Start 2P';
+                gameCtx.font = '48px Press Start 2P'; // Increased from 40px to 48px
                 gameCtx.fillText('Double Points!', 10, yOffset);
                 yOffset += 40;
             }
             if (homingActive) {
+                gameCtx.font = '48px Press Start 2P'; // Increased from 40px to 48px
                 gameCtx.fillText('Homing Missiles!', 10, yOffset);
                 yOffset += 40;
             }
             if (slowdownActive) {
+                gameCtx.font = '48px Press Start 2P'; // Increased from 40px to 48px
                 gameCtx.fillText('Slowdown!', 10, yOffset);
                 yOffset += 40;
             }
+            // Reset shadow to avoid affecting other elements
+            gameCtx.shadowColor = 'transparent';
+            gameCtx.shadowOffsetX = 0;
+            gameCtx.shadowOffsetY = 0;
+            gameCtx.shadowBlur = 0;
 
             gameCtx.restore();
 
