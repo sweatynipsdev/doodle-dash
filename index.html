@@ -33,13 +33,15 @@
         #gameCanvas {
             background: transparent;
         }
+        /* UI FIX START - Adjusted Character Select Layout */
         #characterSelect {
             display: flex;
+            flex-direction: row; /* Ensure horizontal layout */
             align-items: center;
             justify-content: center;
-            gap: 30px;
-            margin-top: 100px;
-            padding: 30px;
+            gap: 20px;
+            margin-top: 50px;
+            padding: 20px;
             background: rgba(0, 0, 0, 0.6);
             border-radius: 15px;
             width: 300px;
@@ -48,7 +50,9 @@
             width: 100px;
             height: 100px;
             border-radius: 50%;
+            background-size: cover;
             transition: transform 0.2s, background-color 0.3s;
+            overflow: hidden;
         }
         #currentCharacter.selected {
             border: 6px solid #ffcc00;
@@ -72,6 +76,7 @@
         .arrow-btn:active {
             transform: scale(0.95);
         }
+        /* UI FIX END */
         button {
             padding: 15px 30px;
             margin: 5px;
@@ -118,6 +123,7 @@
         #healthDisplay {
             top: 100px;
         }
+        /* UI FIX START - Separated High Scores and Slot Machine */
         #highScores {
             position: absolute;
             right: 20px;
@@ -133,26 +139,66 @@
             font-size: 14px;
             font-family: 'Press Start 2P', Arial, sans-serif;
             text-align: left;
+            z-index: 1;
         }
+        #slotMachine {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            width: 300px;
+        }
+        #reels {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        #reels div {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #000;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #000;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #fff;
+            overflow: hidden;
+        }
+        /* UI FIX END */
     </style>
 </head>
 <body>
     <h2>Doodle Dash</h2>
     <div style="position: relative; width: 600px; text-align: center;">
+        <!-- UI FIX START - Reorganized Layout -->
         <div id="characterSelect">
             <button id="leftArrow" class="arrow-btn"><</button>
             <div id="currentCharacter" class="character"></div>
             <button id="rightArrow" class="arrow-btn">></button>
         </div>
+        <div id="slotMachine">
+            <div id="reels"></div>
+            <button id="spinBtn">Spin (5 Tokens)</button>
+        </div>
+        <button id="startBtn" disabled>Start Game</button>
         <div id="highScores"></div>
+        <!-- UI FIX END -->
     </div>
-    <button id="startBtn" disabled>Start Game</button>
     <canvas id="gameCanvas" width="400" height="600" style="display: none;"></canvas>
     <button id="restartBtn" style="display: none;">Play Again</button>
     <div id="controlsHint" style="display: none;">Controls: Move (Arrow Left/Right), Shoot (Spacebar)</div>
     <div id="scoreDisplay" class="game-ui">Score: 0</div>
     <div id="comboDisplay" class="game-ui">Combo: 0x</div>
     <div id="healthDisplay" class="game-ui"></div>
+    <div id="tokenDisplay" style="position: absolute; top: 20px; left: 20px; color: #ffcc00; font-size: 16px; text-shadow: 1px 1px 3px #000;">Tokens: 0</div>
 
     <audio id="coinSound" src="https://www.soundjay.com/money/coins-03.mp3"></audio>
     <audio id="hitSound" src="https://www.soundjay.com/misc/crash-01.mp3"></audio>
@@ -214,6 +260,7 @@
         let baseCloudSpeed = 2;
 
         let highScores = JSON.parse(localStorage.getItem('doodleDashHighScores')) || [];
+        let tokens = parseInt(localStorage.getItem('doodleDashTokens')) || 0;
 
         const characterData = [
             { color: 'red', width: 50, height: 50 },
@@ -256,14 +303,19 @@
         const currentCharacterDiv = document.getElementById('currentCharacter');
         const leftArrow = document.getElementById('leftArrow');
         const rightArrow = document.getElementById('rightArrow');
+        const slotMachineDiv = document.getElementById('slotMachine');
+        const reelsDiv = document.getElementById('reels');
+        const spinBtn = document.getElementById('spinBtn');
+        const tokenDisplay = document.getElementById('tokenDisplay');
 
         function updateCharacterDisplay() {
             const charData = characterData[currentCharacterIndex];
             currentCharacterDiv.style.backgroundColor = charData.color;
-            currentCharacterDiv.style.backgroundImage = 'none'; // Clear any image
+            currentCharacterDiv.style.backgroundImage = 'none';
             currentCharacterDiv.classList.add('selected');
             selectedCharacter = currentCharacterIndex;
             startBtn.disabled = false;
+            console.log('Character updated to:', charData.color); // Debug log
         }
 
         function displayHighScores() {
@@ -305,30 +357,42 @@
             healthDisplay.style.display = 'block';
         }
 
+        // UI FIX START - Debug Character Cycling
         function cycleLeft() {
             currentCharacterIndex = (currentCharacterIndex - 1 + characterData.length) % characterData.length;
+            console.log('Cycling left, new index:', currentCharacterIndex); // Debug log
             updateCharacterDisplay();
         }
 
         function cycleRight() {
             currentCharacterIndex = (currentCharacterIndex + 1) % characterData.length;
+            console.log('Cycling right, new index:', currentCharacterIndex); // Debug log
             updateCharacterDisplay();
         }
 
-        leftArrow.addEventListener('click', cycleLeft);
-        rightArrow.addEventListener('click', cycleRight);
+        leftArrow.addEventListener('click', () => {
+            console.log('Left arrow clicked'); // Debug log
+            cycleLeft();
+        });
+        rightArrow.addEventListener('click', () => {
+            console.log('Right arrow clicked'); // Debug log
+            cycleRight();
+        });
+        // UI FIX END
+
         startBtn.addEventListener('click', () => {
             if (selectedCharacter === null) return;
             setupPlayer();
             gameCanvas.style.display = 'block';
             startBtn.style.display = 'none';
             characterSelectDiv.style.display = 'none';
-            document.getElementById('highScores').style.display = 'none'; // Hide high scores during gameplay
+            document.getElementById('highScores').style.display = 'none';
             restartBtn.style.display = 'block';
             controlsHint.style.display = 'block';
             scoreDisplay.style.display = 'block';
             comboDisplay.style.display = 'block';
             healthDisplay.style.display = 'block';
+            slotMachineDiv.style.display = 'none';
             initBackground();
             startGame();
         });
@@ -475,7 +539,7 @@
         }
 
         function spawnHealthPickup() {
-            if (healthPickups.length >= 2) return; // Limit to 2 heart pickups on screen
+            if (healthPickups.length >= 2) return;
             healthPickups.push({ 
                 x: Math.random() * (400 - 20), 
                 y: 0, 
@@ -483,7 +547,7 @@
                 height: 20, 
                 floatOffset: 0 
             });
-            const interval = Math.max(5000, 15000 - (currentWave * 1000)); // Minimum 5000ms, less aggressive wave scaling
+            const interval = Math.max(5000, 15000 - (currentWave * 1000));
             setTimeout(spawnHealthPickup, interval);
         }
 
@@ -504,7 +568,16 @@
         function gameLoop() {
             if (gameOver) {
                 backgroundMusic.pause();
-                document.getElementById('highScores').style.display = 'block'; // Show high scores on game over
+                document.getElementById('highScores').style.display = 'block';
+                const tokensEarned = Math.floor(score / 100) + currentWave;
+                tokens += tokensEarned;
+                localStorage.setItem('doodleDashTokens', tokens);
+                gameCtx.fillStyle = 'black';
+                gameCtx.font = '20px Press Start 2P';
+                gameCtx.fillText(`Game Over! Score: ${score}`, 50, 300);
+                gameCtx.fillText(`Tokens Earned: ${tokensEarned} | Total: ${tokens}`, 50, 350);
+                slotMachineDiv.style.display = 'flex'; // Ensure slot machine is visible after game over
+                tokenDisplay.textContent = `Tokens: ${tokens}`;
                 return;
             }
             gameTime += 1 / 60;
@@ -595,7 +668,6 @@
                     gameCtx.globalAlpha = 0.5;
                 }
             }
-            // Draw colored circle instead of image
             gameCtx.fillStyle = player.color;
             gameCtx.beginPath();
             gameCtx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
@@ -639,16 +711,6 @@
                     shake.intensity = 5;
                     if (health <= 0) {
                         gameOver = true;
-                        gameCtx.fillStyle = 'black';
-                        gameCtx.font = '50px Press Start 2P';
-                        gameCtx.fillText(`Game Over! Score: ${score}`, 50, 300);
-                        if (score > Math.min(...highScores) || highScores.length < 5) {
-                            highScores.push(score);
-                            highScores.sort((a, b) => b - a).splice(5); // Keep top 5
-                            localStorage.setItem('doodleDashHighScores', JSON.stringify(highScores));
-                            displayHighScores();
-                        }
-                        document.getElementById('highScores').style.display = 'block'; // Show high scores on game over
                     }
                 }
             });
@@ -1158,7 +1220,41 @@
             location.reload();
         });
 
-        // Initial setup
+        const slotOutcomes = [
+            { id: 'coin', chance: 0.3 },
+            { id: 'heart', chance: 0.2 },
+            { id: 'skull', chance: 0.3 },
+            { id: 'star', chance: 0.15 },
+            { id: 'char', chance: 0.05 }
+        ];
+        let nextRunEffect = null;
+
+        spinBtn.addEventListener('click', () => {
+            if (tokens < 5) {
+                alert('Not enough tokens!');
+                return;
+            }
+            tokens -= 5;
+            localStorage.setItem('doodleDashTokens', tokens);
+            tokenDisplay.textContent = `Tokens: ${tokens}`;
+            reelsDiv.innerHTML = '';
+            let result = [];
+            for (let i = 0; i < 3; i++) {
+                const roll = Math.random();
+                let cumulative = 0;
+                for (let outcome of slotOutcomes) {
+                    cumulative += outcome.chance;
+                    if (roll <= cumulative) {
+                        result.push(outcome);
+                        break;
+                    }
+                }
+                reelsDiv.innerHTML += `<div>${result[i].id.charAt(0).toUpperCase()}</div>`;
+            }
+            console.log('Slot result:', result.map(r => r.id));
+        });
+
+        tokenDisplay.textContent = `Tokens: ${tokens}`;
         updateCharacterDisplay();
         displayHighScores();
     </script>
