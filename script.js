@@ -318,8 +318,10 @@
             const shape = type === 'normal' ? Math.floor(Math.random() * 3) : 0;
             const width = type === 'normal' ? Math.random() * 40 + 20 : 40;
             const height = type === 'normal' ? Math.random() * 50 + 30 : 40;
-            const isFast = Math.random() < 0.2; // 20% chance for fast banana
-            const speed = isFast ? 8 : (type === 'splitter' ? 4 : 5); // Fast bananas move at speed 8
+            const isFast = Math.random() < 0.2;
+            const speed = isFast ? 8 : (type === 'splitter' ? 4 : 5);
+            const isBouncer = Math.random() < 0.2; // 20% chance for bouncing banana
+            const vx = isBouncer ? (Math.random() * 4 - 2) : 0; // Horizontal velocity between -2 and 2
             bananas.push({ 
                 x: Math.random() * (400 - width), 
                 y: 0, 
@@ -328,8 +330,10 @@
                 shape: shape, 
                 type: type,
                 splitCount: type === 'splitter' ? 1 : 0,
-                speed: speed, // New speed property
-                isFast: isFast // Track if it's a fast banana for styling
+                speed: speed,
+                isFast: isFast,
+                isBouncer: isBouncer,
+                vx: vx
             });
             const baseInterval = 1500 - (currentWave * 200);
             const minInterval = 500;
@@ -508,7 +512,7 @@ if (!canDash) {
             gameCtx.restore();
 
             bananas.forEach((b, i) => {
-                gameCtx.fillStyle = b.isFast ? 'red' : (b.type === 'splitter' ? 'orange' : 'yellow'); // Fast bananas are red
+                gameCtx.fillStyle = b.isBouncer ? 'purple' : (b.isFast ? 'red' : (b.type === 'splitter' ? 'orange' : 'yellow'));
                 if (b.shape === 0) {
                     gameCtx.fillRect(b.x, b.y, b.width, b.height);
                 } else if (b.shape === 1) {
@@ -523,7 +527,14 @@ if (!canDash) {
                     gameCtx.closePath();
                     gameCtx.fill();
                 }
-                b.y += b.speed * speedFactor; // Use the banana's speed property
+                b.y += b.speed * speedFactor;
+                if (b.isBouncer) {
+                    b.x += b.vx * speedFactor;
+                    if (b.x <= 0 || b.x + b.width >= 400) {
+                        b.vx = -b.vx;
+                        b.x = Math.max(0, Math.min(b.x, 400 - b.width));
+                    }
+                }
                 if (b.y > 600) bananas.splice(i, 1);
                 if (checkCollision(player, b) && !invincible) {
                     if (shieldHealth > 0) {
@@ -544,6 +555,7 @@ if (!canDash) {
                     if (health <= 0) {
                         gameOver = true;
                     }
+                    bananas.splice(i, 1);
                 }
             });
 
