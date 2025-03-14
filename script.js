@@ -472,7 +472,7 @@
             gameCtx.restore();
 
             bananas.forEach((b, i) => {
-                gameCtx.fillStyle = b.type === 'splitter' ? 'orange' : 'yellow';
+                gameCtx.fillStyle = b.isFast ? 'red' : (b.type === 'splitter' ? 'orange' : 'yellow'); // Fast bananas are red
                 if (b.shape === 0) {
                     gameCtx.fillRect(b.x, b.y, b.width, b.height);
                 } else if (b.shape === 1) {
@@ -487,7 +487,7 @@
                     gameCtx.closePath();
                     gameCtx.fill();
                 }
-                b.y += (b.type === 'splitter' ? 4 : 5) * speedFactor;
+                b.y += b.speed * speedFactor; // Use the banana's speed property
                 if (b.y > 600) bananas.splice(i, 1);
                 if (checkCollision(player, b) && !invincible) {
                     if (shieldHealth > 0) {
