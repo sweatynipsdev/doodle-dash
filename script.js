@@ -308,6 +308,7 @@
                 }
                 canDash = false; // Start cooldown
                 dashTimer = 0;
+                createParticles(player.x + player.width / 2, player.y + player.height / 2, 'rgba(255, 255, 255, 1)'); // White particles for dash
                 console.log('Dashed in direction:', lastDirection); // Debug log
             }
         }
