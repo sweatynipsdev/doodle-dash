@@ -290,6 +290,8 @@
             const shape = type === 'normal' ? Math.floor(Math.random() * 3) : 0;
             const width = type === 'normal' ? Math.random() * 40 + 20 : 40;
             const height = type === 'normal' ? Math.random() * 50 + 30 : 40;
+            const isFast = Math.random() < 0.2; // 20% chance for fast banana
+            const speed = isFast ? 8 : (type === 'splitter' ? 4 : 5); // Fast bananas move at speed 8
             bananas.push({ 
                 x: Math.random() * (400 - width), 
                 y: 0, 
@@ -297,7 +299,9 @@
                 height: height, 
                 shape: shape, 
                 type: type,
-                splitCount: type === 'splitter' ? 1 : 0
+                splitCount: type === 'splitter' ? 1 : 0,
+                speed: speed, // New speed property
+                isFast: isFast // Track if it's a fast banana for styling
             });
             const baseInterval = 1500 - (currentWave * 200);
             const minInterval = 500;
