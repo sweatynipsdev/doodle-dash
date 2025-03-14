@@ -15,9 +15,9 @@
         const powerUpSound = document.getElementById('powerUpSound');
 
         let canDash = true; // Tracks if the player can dash
-        let dashCooldown = 2; // Cooldown in seconds
+        let dashCooldown = 1; // Cooldown in seconds
         let dashTimer = 0; // Tracks the cooldown timer
-        let dashDistance = 50; // How far the player dashes
+        let dashDistance = 75; // How far the player dashes
         let lastDirection = 'right'; // Tracks the last direction for dashing
 
         let player, bananas = [], coins = [], powerUps = [], healthPickups = [], projectiles = [], particles = [], popUps = [], textParticles = [], score = 0, gameOver = false;
