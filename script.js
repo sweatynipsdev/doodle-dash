@@ -14,6 +14,12 @@
         const shootSound = document.getElementById('shootSound');
         const powerUpSound = document.getElementById('powerUpSound');
 
+        let canDash = true; // Tracks if the player can dash
+        let dashCooldown = 2; // Cooldown in seconds
+        let dashTimer = 0; // Tracks the cooldown timer
+        let dashDistance = 50; // How far the player dashes
+        let lastDirection = 'right'; // Tracks the last direction for dashing
+
         let player, bananas = [], coins = [], powerUps = [], healthPickups = [], projectiles = [], particles = [], popUps = [], textParticles = [], score = 0, gameOver = false;
         let keys = {};
         let playerImg, playerCollisionMask = [];
@@ -281,8 +287,29 @@
         }
 
         function movePlayer() {
-            if (keys['ArrowLeft'] && player.x > 0) player.x -= 5;
-            if (keys['ArrowRight'] && player.x < 400 - player.width) player.x += 5;
+            // Track the last direction for dashing
+            if (keys['ArrowLeft'] && player.x > 0) {
+                player.x -= 5;
+                lastDirection = 'left';
+            }
+            if (keys['ArrowRight'] && player.x < 400 - player.width) {
+                player.x += 5;
+                lastDirection = 'right';
+            }
+        
+            // Dash mechanic
+            if (keys['Shift'] && canDash) {
+                if (lastDirection === 'left' && player.x > 0) {
+                    player.x -= dashDistance;
+                    if (player.x < 0) player.x = 0; // Prevent going off-screen
+                } else if (lastDirection === 'right' && player.x < 400 - player.width) {
+                    player.x += dashDistance;
+                    if (player.x > 400 - player.width) player.x = 400 - player.width; // Prevent going off-screen
+                }
+                canDash = false; // Start cooldown
+                dashTimer = 0;
+                console.log('Dashed in direction:', lastDirection); // Debug log
+            }
         }
 
         function spawnBanana() {
@@ -377,6 +404,14 @@
                 return;
             }
             gameTime += 1 / 60;
+            // Update dash cooldown
+if (!canDash) {
+    dashTimer += 1 / 60;
+    if (dashTimer >= dashCooldown) {
+        canDash = true;
+        dashTimer = 0;
+    }
+}
             let speedFactor = 1 + Math.min(gameTime / 30, 2) + (currentWave * 0.2);
             if (slowdownActive) speedFactor *= 0.5;
 
