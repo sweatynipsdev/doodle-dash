@@ -753,7 +753,11 @@ if (!canDash) {
                                 height: b.height / 2,
                                 shape: 0,
                                 type: 'normal',
-                                splitCount: 0
+                                splitCount: 0,
+                                speed: 5, // Default speed for normal bananas
+                                isFast: false,
+                                isBouncer: false,
+                                vx: 0
                             });
                             bananas.push({
                                 x: b.x + 10,
@@ -762,7 +766,11 @@ if (!canDash) {
                                 height: b.height / 2,
                                 shape: 0,
                                 type: 'normal',
-                                splitCount: 0
+                                splitCount: 0,
+                                speed: 5,
+                                isFast: false,
+                                isBouncer: false,
+                                vx: 0
                             });
                         }
                         bananas.splice(j, 1);
