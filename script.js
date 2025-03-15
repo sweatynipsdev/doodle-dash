@@ -33,7 +33,7 @@ let shake = { duration: 0, intensity: 0, offsetX: 0, offsetY: 0 };
 let auraColor = '';
 let health = 3;
 let currentWave = 1;
-let nextWaveTime = 15;
+let nextWaveTime = 20; // Reduced from 30 to 20 seconds
 let selectedCharacter = null;
 let combo = 0;
 let comboMultiplier = 1;
@@ -103,6 +103,16 @@ function update(time, delta) {
 
     gameTime += delta / 1000;
 
+    // Check for wave progression based on time only
+    if (gameTime >= nextWaveTime * currentWave) {
+        currentWave++;
+        score += currentWave * 50; // Reward for surviving to a new wave
+        increaseDifficulty();
+        updateUIDisplays(); // Update to show new wave
+        popUps.push({ text: `Wave ${currentWave}!`, x: 200, y: 300, life: 2 });
+        console.log(`Advanced to Wave ${currentWave} at ${gameTime}s`);
+    }
+
     if (!canDash) {
         dashTimer += delta / 1000;
         if (dashTimer >= dashCooldown) {
@@ -146,14 +156,13 @@ function update(time, delta) {
     }
 
     if (debugText) {
-        debugText.setText(`Debug: X: ${player ? player.x : 'N/A'}, Y: ${player ? player.y : 'N/A'}`);
+        debugText.setText(`Debug: X: ${player ? player.x : 'N/A'}, Y: ${player ? player.y : 'N/A'}, Wave: ${currentWave}`);
     }
 
     // Move projectiles upward with homing behavior if active
     projectiles.forEach(projectile => {
         let effectiveSpeed = projectile.speed;
         if (homingActive && bananas.length > 0) {
-            // Find the nearest banana
             let nearestBanana = null;
             let minDistance = Infinity;
             bananas.forEach(banana => {
@@ -165,7 +174,6 @@ function update(time, delta) {
             });
 
             if (nearestBanana) {
-                // Lock onto the nearest banana's center
                 const targetX = nearestBanana.x + nearestBanana.width / 2;
                 const targetY = nearestBanana.y + nearestBanana.height / 2;
                 const angle = Phaser.Math.Angle.Between(projectile.x, projectile.y, targetX, targetY);
@@ -190,7 +198,7 @@ function update(time, delta) {
 
     // Move bananas downward with slowdown effect if active
     bananas.forEach(banana => {
-        let effectiveSpeed = banana.speed;
+        let effectiveSpeed = banana.speed * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
         if (slowdownActive) effectiveSpeed *= 0.5;
         banana.obj.y += effectiveSpeed;
         banana.obj.x += banana.vx;
@@ -232,9 +240,9 @@ function update(time, delta) {
                 projectileBounds.x + projectileBounds.width > bananaBounds.x &&
                 projectileBounds.y < bananaBounds.y + bananaBounds.height &&
                 projectileBounds.y + projectileBounds.height > bananaBounds.y) {
-                score += doublePointsActive ? 20 : 10;
+                score += Math.round((doublePointsActive ? 20 : 10) * comboMultiplier); // Apply combo multiplier
                 combo += 1;
-                comboMultiplier = Math.floor(combo / 5) + 1;
+                comboMultiplier = 1 + (combo * 0.1); // Increment by 0.1 per combo
                 updateUIDisplays();
                 createParticles(banana.x, banana.y);
                 projectile.obj.destroy();
@@ -247,7 +255,7 @@ function update(time, delta) {
 
     // Move coins downward
     coins.forEach(coin => {
-        coin.obj.y += 2;
+        coin.obj.y += 2 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
         coin.x = coin.obj.x;
         coin.y = coin.obj.y;
         if (coin.obj.y > 600 + coin.height) {
@@ -255,9 +263,9 @@ function update(time, delta) {
             coins = coins.filter(c => c !== coin);
         }
         if (player && checkCollision(player, coin)) {
-            score += doublePointsActive ? 20 : 10;
+            score += Math.round((doublePointsActive ? 20 : 10) * comboMultiplier); // Apply combo multiplier
             combo += 1;
-            comboMultiplier = Math.floor(combo / 5) + 1;
+            comboMultiplier = 1 + (combo * 0.1); // Increment by 0.1 per combo
             updateUIDisplays();
             createParticles(coin.x, coin.y);
             coin.obj.destroy();
@@ -267,7 +275,7 @@ function update(time, delta) {
 
     // Move power-ups downward
     powerUps.forEach(powerUp => {
-        powerUp.obj.y += 1;
+        powerUp.obj.y += 1 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
         powerUp.x = powerUp.obj.x;
         powerUp.y = powerUp.obj.y;
         if (powerUp.obj.y > 600 + powerUp.height) {
@@ -284,7 +292,7 @@ function update(time, delta) {
 
     // Move health pickups downward
     healthPickups.forEach(healthPickup => {
-        healthPickup.obj.y += 1;
+        healthPickup.obj.y += 1 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
         healthPickup.x = healthPickup.obj.x;
         healthPickup.y = healthPickup.obj.y;
         if (healthPickup.obj.y > 600 + healthPickup.height) {
@@ -440,7 +448,7 @@ function displayHighScores() {
 
 function updateUIDisplays() {
     scoreDisplay.textContent = `Score: ${score}`;
-    comboDisplay.textContent = `Combo: ${combo}x`;
+    comboDisplay.textContent = `Combo: ${combo}x (x${comboMultiplier.toFixed(1)})`;
     healthDisplay.innerHTML = '';
     for (let i = 0; i < health + shieldHealth; i++) {
         const heart = document.createElement('span');
@@ -450,6 +458,20 @@ function updateUIDisplays() {
         heart.style.marginRight = '5px';
         healthDisplay.appendChild(heart);
     }
+    // Add wave display
+    let waveDisplay = document.getElementById('waveDisplay');
+    if (!waveDisplay) {
+        waveDisplay = document.createElement('div');
+        waveDisplay.id = 'waveDisplay';
+        waveDisplay.style.position = 'absolute';
+        waveDisplay.style.top = '50px';
+        waveDisplay.style.left = '10px';
+        waveDisplay.style.fontSize = '16px';
+        waveDisplay.style.color = '#fff';
+        waveDisplay.style.textShadow = '1px 1px 2px #000';
+        healthDisplay.parentNode.insertBefore(waveDisplay, healthDisplay.nextSibling);
+    }
+    waveDisplay.textContent = `Wave: ${currentWave}`;
     scoreDisplay.style.display = 'block';
     comboDisplay.style.display = 'block';
     healthDisplay.style.display = 'block';
@@ -523,7 +545,8 @@ function spawnBanana() {
     const width = type === 'normal' ? Math.random() * 40 + 20 : 40;
     const height = type === 'normal' ? Math.random() * 50 + 30 : 40;
     const isFast = Math.random() < 0.2;
-    const speed = isFast ? 8 : (type === 'splitter' ? 4 : 5);
+    const baseSpeed = isFast ? 6 : (type === 'splitter' ? 4 : 5); // Reduced fast banana speed from 8 to 6
+    const speed = baseSpeed * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
     const isBouncer = Math.random() < 0.2;
     const vx = isBouncer ? (Math.random() * 4 - 2) : 0;
     const banana = currentScene.add.rectangle(Math.random() * (400 - width), 0, width, height, 0xffff00);
@@ -835,3 +858,9 @@ spinBtn.addEventListener('click', () => {
 tokenDisplay.textContent = `Tokens: ${tokens}`;
 updateCharacterDisplay();
 displayHighScores();
+
+// Function to increase difficulty with each wave
+function increaseDifficulty() {
+    // Speed increase is now handled in the update loops with a non-linear formula
+    console.log(`Difficulty increased for Wave ${currentWave}`);
+}
