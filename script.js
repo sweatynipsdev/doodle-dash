@@ -67,11 +67,8 @@ let nextRunEffect = null;
 
 function preload() {
     console.log('Preload function called');
-    // Placeholder for power-up images (to be added later)
-    this.load.image('powerup0', 'path/to/powerup0.png');
-    this.load.image('powerup1', 'path/to/powerup1.png');
-    this.load.image('powerup2', 'path/to/powerup2.png');
-    this.load.image('powerup3', 'path/to/powerup3.png');
+    // Removed asset loading to avoid 404 errors
+    // Add back when actual assets are available
 }
 
 function create() {
@@ -145,7 +142,6 @@ function update(time, delta) {
             projectiles.push({ obj: projectile, x: projectile.x, y: projectile.y, speed: 10 });
             lastShotTime = time;
             console.log('Projectile fired at:', projectile.x, projectile.y);
-            // shootSound.play(); // Uncomment when audio is added
         }
     }
 
@@ -155,9 +151,7 @@ function update(time, delta) {
 
     // Move projectiles upward with homing behavior if active
     projectiles.forEach(projectile => {
-        projectile.obj.y -= projectile.speed;
-        projectile.y = projectile.obj.y;
-
+        let effectiveSpeed = projectile.speed;
         if (homingActive && bananas.length > 0) {
             // Find the nearest banana
             let nearestBanana = null;
@@ -171,14 +165,21 @@ function update(time, delta) {
             });
 
             if (nearestBanana) {
-                // Move projectile towards the nearest banana's center
+                // Lock onto the nearest banana's center
                 const targetX = nearestBanana.x + nearestBanana.width / 2;
                 const targetY = nearestBanana.y + nearestBanana.height / 2;
                 const angle = Phaser.Math.Angle.Between(projectile.x, projectile.y, targetX, targetY);
-                const homingSpeed = 5; // Increased for noticeable effect
+                const homingSpeed = 7;
+                const maxVerticalSpeed = 2;
                 projectile.obj.x += Math.cos(angle) * homingSpeed;
+                projectile.obj.y += Math.sin(angle) * homingSpeed;
                 projectile.x = projectile.obj.x;
+                projectile.y = projectile.obj.y;
+                effectiveSpeed = maxVerticalSpeed;
             }
+        } else {
+            projectile.obj.y -= effectiveSpeed;
+            projectile.y = projectile.obj.y;
         }
 
         if (projectile.obj.y < 0) {
@@ -190,7 +191,7 @@ function update(time, delta) {
     // Move bananas downward with slowdown effect if active
     bananas.forEach(banana => {
         let effectiveSpeed = banana.speed;
-        if (slowdownActive) effectiveSpeed *= 0.5; // Reduce speed by half when slowdown is active
+        if (slowdownActive) effectiveSpeed *= 0.5;
         banana.obj.y += effectiveSpeed;
         banana.obj.x += banana.vx;
         banana.x = banana.obj.x;
@@ -212,14 +213,14 @@ function update(time, delta) {
         }
     });
 
-    // Check collisions between projectiles and bananas
+    // Check collisions between projectiles and bananas with increased overlap
     projectiles.forEach(projectile => {
         bananas.forEach(banana => {
             const projectileBounds = {
                 x: projectile.obj.x - projectile.obj.width / 2,
                 y: projectile.obj.y,
-                width: projectile.obj.width,
-                height: projectile.obj.height
+                width: projectile.obj.width * 1.2,
+                height: projectile.obj.height * 1.2
             };
             const bananaBounds = {
                 x: banana.obj.x,
@@ -261,7 +262,6 @@ function update(time, delta) {
             createParticles(coin.x, coin.y);
             coin.obj.destroy();
             coins = coins.filter(c => c !== coin);
-            // coinSound.play(); // Uncomment when audio is added
         }
     });
 
@@ -279,7 +279,6 @@ function update(time, delta) {
             createParticles(powerUp.x, powerUp.y);
             powerUp.obj.destroy();
             powerUps = powerUps.filter(p => p !== powerUp);
-            // powerUpSound.play(); // Uncomment when audio is added
         }
     });
 
@@ -414,7 +413,6 @@ function startGame() {
     spawnPowerUp();
     spawnHealthPickup();
     console.log('Game started with character:', characterData[selectedCharacter].color);
-    // backgroundMusic.play(); // Uncomment when audio is added
 }
 
 function updateCharacterDisplay() {
@@ -768,6 +766,7 @@ function pointInTriangle(p, v0, v1, v2) {
     return s >= 0 && t >= 0 && (s + t) <= 1;
 }
 
+// DOM elements
 const startBtn = document.getElementById('startBtn');
 const restartBtn = document.getElementById('restartBtn');
 const controlsHint = document.getElementById('controlsHint');
@@ -782,12 +781,8 @@ const slotMachineDiv = document.getElementById('slotMachine');
 const reelsDiv = document.getElementById('reels');
 const spinBtn = document.getElementById('spinBtn');
 const tokenDisplay = document.getElementById('tokenDisplay');
-// const backgroundMusic = document.getElementById('backgroundMusic');
-// const coinSound = document.getElementById('coinSound');
-// const hitSound = document.getElementById('hitSound');
-// const shootSound = document.getElementById('shootSound');
-// const powerUpSound = document.getElementById('powerUpSound');
 
+// Event listeners
 startBtn.addEventListener('click', () => {
     if (!currentScene) {
         console.error('Scene not initialized, retrying...');
@@ -836,6 +831,7 @@ spinBtn.addEventListener('click', () => {
     console.log('Slot result:', result.map(r => r.id));
 });
 
+// Initialize UI
 tokenDisplay.textContent = `Tokens: ${tokens}`;
 updateCharacterDisplay();
 displayHighScores();
