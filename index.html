@@ -4,39 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Doodle Dash</title>
-    <link rel="stylesheet" href="styles.css">    
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+        }
+    </style>
 </head>
 <body>
-    <h2>Doodle Dash</h2>
-    <div style="position: relative; width: 600px; text-align: center;">
-        <!-- UI FIX START - Reorganized Layout -->
-        <div id="characterSelect">
-            <button id="leftArrow" class="arrow-btn"><</button>
-            <div id="currentCharacter" class="character"></div>
-            <button id="rightArrow" class="arrow-btn">></button>
-        </div>
-        <div id="slotMachine">
-            <div id="reels"></div>
-            <button id="spinBtn">Spin (5 Tokens)</button>
-        </div>
-        <button id="startBtn" disabled>Start Game</button>
-        <div id="highScores"></div>
-        <!-- UI FIX END -->
+    <div id="characterSelect">
+        <button id="leftArrow">◄</button>
+        <div id="currentCharacter"></div>
+        <button id="rightArrow">►</button>
     </div>
-    <canvas id="gameCanvas" width="400" height="600" style="display: none;"></canvas>
-    <button id="restartBtn" style="display: none;">Play Again</button>
-    <div id="controlsHint" style="display: none;">Controls: Move (Arrow Left/Right), Shoot (Spacebar)</div>
-    <div id="scoreDisplay" class="game-ui">Score: 0</div>
-    <div id="comboDisplay" class="game-ui">Combo: 0x</div>
-    <div id="healthDisplay" class="game-ui"></div>
-    <div id="tokenDisplay" style="position: absolute; top: 20px; left: 20px; color: #ffcc00; font-size: 16px; text-shadow: 1px 1px 3px #000;">Tokens: 0</div>
-
-    <audio id="coinSound" src="https://www.soundjay.com/money/coins-03.mp3"></audio>
-    <audio id="hitSound" src="https://www.soundjay.com/misc/crash-01.mp3"></audio>
-    <audio id="shootSound" src="https://www.soundjay.com/buttons/beep-02.mp3"></audio>
-    <audio id="powerUpSound" src="https://www.soundjay.com/buttons/button-09a.mp3"></audio>
-    <audio id="backgroundMusic" src="background_music.mp3" loop autoplay></audio>
-    
+    <div id="highScores"></div>
+    <button id="startBtn">Start Game</button>
+    <button id="restartBtn" style="display: none;">Restart</button>
+    <div id="controlsHint" style="display: none;">Use ← → to move, Shift to dash</div>
+    <div id="scoreDisplay" style="display: none;">Score: 0</div>
+    <div id="comboDisplay" style="display: none;">Combo: 0x</div>
+    <div id="healthDisplay" style="display: none;"></div>
+    <div id="slotMachine" style="display: none;">
+        <div id="reels"></div>
+        <button id="spinBtn">Spin (5 Tokens)</button>
+        <div id="tokenDisplay">Tokens: 0</div>
+    </div>
+    <audio id="backgroundMusic" src="path/to/background.mp3" loop></audio>
+    <audio id="coinSound" src="path/to/coin.mp3"></audio>
+    <audio id="hitSound" src="path/to/hit.mp3"></audio>
+    <audio id="shootSound" src="path/to/shoot.mp3"></audio>
+    <audio id="powerUpSound" src="path/to/powerup.mp3"></audio>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

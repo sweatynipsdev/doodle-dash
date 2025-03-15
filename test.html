@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phaser Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #333;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: 400,
+            height: 600,
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            },
+            backgroundColor: '#87ceeb'
+        };
+
+        const game = new Phaser.Game(config);
+
+        function preload() {
+            console.log('Preload function called');
+        }
+
+        function create() {
+            console.log('Create function called');
+            const testCircle = this.add.circle(100, 100, 25, 0xff0000);
+            testCircle.setStrokeStyle(2, 0x00ff00);
+            console.log('Test circle created at:', testCircle.x, testCircle.y);
+            const debugText = this.add.text(10, 10, 'Debug: Test', {
+                fontSize: '16px',
+                color: '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 2
+            });
+            console.log('Debug text created at:', debugText.x, debugText.y);
+        }
+
+        function update() {
+            console.log('Update function called');
+        }
+    </script>
+</body>
+</html>
