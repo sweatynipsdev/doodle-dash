@@ -51,9 +51,9 @@ let dashTimer = 0;
 let dashDistance = 75;
 let lastDirection = 'right';
 const characterData = [
-    { color: 'red', width: 100, height: 100 },
-    { color: 'blue', width: 100, height: 100 },
-    { color: 'green', width: 100, height: 100 }
+    { color: 'red', width: 50, height: 50 },
+    { color: 'blue', width: 50, height: 50 },
+    { color: 'green', width: 50, height: 50 }
 ];
 let currentCharacterIndex = 0;
 const slotOutcomes = [
@@ -67,11 +67,15 @@ let nextRunEffect = null;
 
 function preload() {
     console.log('Preload function called');
-    this.load.image('ship', 'ship.png');
     this.load.spritesheet('heart', 'hearts.png', {
-        frameWidth: 256, // Updated to match actual frame size
-        frameHeight: 256 // Updated to match actual frame size
+        frameWidth: 256,
+        frameHeight: 256
     });
+    this.load.image('coin', 'coin.png');
+    this.load.image('doublepoints', 'doublepoints.png');
+    this.load.image('shield', 'shield.png');
+    this.load.image('slowdown', 'slowdown.png');
+    this.load.image('projectile', 'projectile.png');
 }
 
 function create() {
@@ -97,7 +101,6 @@ function create() {
     this.keys.shift = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
     this.keys.space = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
-    // Create heart animation
     this.anims.create({
         key: 'heart_anim',
         frames: this.anims.generateFrameNumbers('heart', { start: 0, end: 63 }),
@@ -132,21 +135,21 @@ function update(time, delta) {
     }
 
     if (player) {
-        if (this.keys.left.isDown && player.x > 0) {
+        if (this.keys.left.isDown && player.x > player.width / 2) {
             player.x -= 5;
             lastDirection = 'left';
-        } else if (this.keys.right.isDown && player.x < 400 - player.width) {
+        } else if (this.keys.right.isDown && player.x < 400 - player.width / 2) {
             player.x += 5;
             lastDirection = 'right';
         }
 
         if (this.keys.shift.isDown && canDash) {
-            if (lastDirection === 'left' && player.x > 0) {
+            if (lastDirection === 'left' && player.x > player.width / 2) {
                 player.x -= dashDistance;
-                if (player.x < 0) player.x = 0;
-            } else if (lastDirection === 'right' && player.x < 400 - player.width) {
+                if (player.x < player.width / 2) player.x = player.width / 2;
+            } else if (lastDirection === 'right' && player.x < 400 - player.width / 2) {
                 player.x += dashDistance;
-                if (player.x > 400 - player.width) player.x = 400 - player.width;
+                if (player.x > 400 - player.width / 2) player.x = 400 - player.width / 2;
             }
             canDash = false;
             dashTimer = 0;
@@ -154,8 +157,15 @@ function update(time, delta) {
         }
 
         if (this.keys.space.isDown && time - lastShotTime > 500) {
-            const projectile = currentScene.add.rectangle(player.x + player.width / 2, player.y, 10, 20, 0xff0000);
-            projectile.setOrigin(0.5, 0);
+            let projectile;
+            if (homingActive) {
+                projectile = currentScene.add.image(player.x, player.y - player.height / 2, 'projectile');
+                projectile.setOrigin(0.5, 0);
+                projectile.setScale(0.5);
+            } else {
+                projectile = currentScene.add.rectangle(player.x, player.y - player.height / 2, 10, 20, 0xff0000);
+                projectile.setOrigin(0.5, 0);
+            }
             projectile.setDepth(1);
             projectiles.push({ obj: projectile, x: projectile.x, y: projectile.y, speed: 10 });
             lastShotTime = time;
@@ -191,6 +201,7 @@ function update(time, delta) {
                 projectile.x = projectile.obj.x;
                 projectile.y = projectile.obj.y;
                 effectiveSpeed = maxVerticalSpeed;
+                projectile.obj.rotation = angle + Math.PI / 2;
             }
         } else {
             projectile.obj.y -= effectiveSpeed;
@@ -216,6 +227,8 @@ function update(time, delta) {
         }
         if (player && checkCollision(player, banana)) {
             health -= 1;
+            combo = 0; // Reset combo
+            comboMultiplier = 1;
             updateUIDisplays();
             if (health <= 0) {
                 gameOver = true;
@@ -230,10 +243,10 @@ function update(time, delta) {
     projectiles.forEach(projectile => {
         bananas.forEach(banana => {
             const projectileBounds = {
-                x: projectile.obj.x - projectile.obj.width / 2,
+                x: projectile.obj.x - (projectile.obj.width * (homingActive ? 0.5 : 1) / 2), // Account for scaling if homing
                 y: projectile.obj.y,
-                width: projectile.obj.width * 1.2,
-                height: projectile.obj.height * 1.2
+                width: projectile.obj.width * (homingActive ? 0.5 : 1),
+                height: projectile.obj.height * (homingActive ? 0.5 : 1)
             };
             const bananaBounds = {
                 x: banana.obj.x,
@@ -254,6 +267,12 @@ function update(time, delta) {
                 banana.obj.destroy();
                 projectiles = projectiles.filter(p => p !== projectile);
                 bananas = bananas.filter(b => b !== banana);
+            } else {
+                // Debug log to check missed collisions
+                if (Math.abs(projectileBounds.x - bananaBounds.x) < 50 &&
+                    Math.abs(projectileBounds.y - bananaBounds.y) < 50) {
+                    console.log('Missed collision:', projectileBounds, bananaBounds);
+                }
             }
         });
     });
@@ -376,12 +395,13 @@ function initPlayer() {
     }
     const charData = characterData[selectedCharacter];
     try {
-        player = currentScene.add.image(200, 500, 'ship');
+        player = currentScene.add.circle(200, 500, charData.width / 2, Phaser.Display.Color.HexStringToColor(charData.color).color);
         player.setOrigin(0.5, 0.5);
         player.setDepth(1);
         player.width = charData.width;
         player.height = charData.height;
         console.log('Player initialized at:', player.x, player.y, 'with bounds:', player.getBounds());
+        console.log('Player dimensions:', player.width, player.height);
     } catch (error) {
         console.error('Failed to initialize player:', error);
     }
@@ -523,9 +543,10 @@ function initBackground() {
 
 function setupPlayer() {
     const charData = characterData[selectedCharacter];
+    // Ensure collision mask matches the circle's exact size
     playerCollisionMask = [{
-        x: 0,
-        y: 0,
+        x: -charData.width / 2,
+        y: -charData.height / 2,
         width: charData.width,
         height: charData.height
     }];
@@ -568,7 +589,9 @@ function spawnBanana() {
 function spawnCoin() {
     if (gameOver) return;
     console.log('spawnCoin called');
-    const coin = currentScene.add.circle(Math.random() * (400 - 20), 0, 10, 0xffd700);
+    const coin = currentScene.add.image(Math.random() * (400 - 20), 0, 'coin');
+    coin.setOrigin(0.5, 0.5);
+    coin.setScale(20 / coin.width);
     coin.setDepth(1);
     coins.push({ obj: coin, x: coin.x, y: coin.y, width: 20, height: 20, floatOffset: 0, rotation: 0 });
     const baseInterval = 1000 - (currentWave * 100);
@@ -581,7 +604,17 @@ function spawnPowerUp() {
     if (gameOver) return;
     console.log('spawnPowerUp called');
     const type = Math.floor(Math.random() * 4);
-    const powerUp = currentScene.add.rectangle(Math.random() * (400 - 40), 0, 40, 40, 0x00ff00);
+    let imageKey;
+    switch (type) {
+        case 0: imageKey = 'doublepoints'; break;
+        case 1: imageKey = 'projectile'; break;
+        case 2: imageKey = 'slowdown'; break;
+        case 3: imageKey = 'shield'; break;
+        default: imageKey = 'doublepoints';
+    }
+    const powerUp = currentScene.add.image(Math.random() * (400 - 40), 0, imageKey);
+    powerUp.setOrigin(0.5, 0.5);
+    powerUp.setScale(40 / powerUp.width);
     powerUp.setDepth(1);
     powerUps.push({
         obj: powerUp,
@@ -603,16 +636,16 @@ function spawnHealthPickup() {
     if (gameOver) return;
     console.log('spawnHealthPickup called');
     if (healthPickups.length >= 2) return;
-    const originalSize = 256; // Original frame size
-    const scaledSize = 40; // Desired display size
-    const scale = scaledSize / originalSize; // Scale factor (40 / 256 ≈ 0.15625)
+    const originalSize = 256;
+    const scaledSize = 40;
+    const scale = scaledSize / originalSize;
     const healthPickup = currentScene.add.sprite(
-        Math.random() * (400 - scaledSize) + scaledSize / 2, // Center within bounds
-        scaledSize / 2, // Start at top, accounting for scaled size
+        Math.random() * (400 - scaledSize) + scaledSize / 2,
+        scaledSize / 2,
         'heart'
     );
     healthPickup.setOrigin(0.5, 0.5);
-    healthPickup.setScale(scale); // Scale down to 40x40
+    healthPickup.setScale(scale);
     healthPickup.setDepth(1);
     healthPickup.play('heart_anim');
     healthPickups.push({
@@ -691,18 +724,19 @@ function activatePowerUp(type) {
 
 function checkCollision(player, obj) {
     const playerBoxes = playerCollisionMask.map(box => ({
-        x: player.x + box.x * (player.width / 100),
-        y: player.y + box.y * (player.height / 100),
-        width: box.width * (player.width / 100) + 10,
-        height: box.height * (player.height / 100) + 10
+        x: player.x + box.x,
+        y: player.y + box.y,
+        width: box.width,
+        height: box.height
     }));
 
+    // For non-shaped objects (coins, power-ups, health pickups)
     if (obj.shape === undefined && obj.type === undefined) {
         const objBox = {
-            x: obj.x - 10,
-            y: obj.y + (obj.floatOffset || 0) - 10,
-            width: obj.width + 20,
-            height: obj.height + 20
+            x: obj.x,
+            y: obj.y + (obj.floatOffset || 0),
+            width: obj.width,
+            height: obj.height
         };
         for (let box of playerBoxes) {
             if (box.x < objBox.x + objBox.width &&
@@ -715,8 +749,9 @@ function checkCollision(player, obj) {
         return false;
     }
 
+    // For bananas with shapes
     if (obj.shape !== undefined) {
-        if (obj.shape === 0) {
+        if (obj.shape === 0) { // Rectangle
             for (let box of playerBoxes) {
                 if (box.x < obj.x + obj.width &&
                     box.x + box.width > obj.x &&
@@ -726,10 +761,10 @@ function checkCollision(player, obj) {
                 }
             }
             return false;
-        } else if (obj.shape === 1) {
+        } else if (obj.shape === 1) { // Circle
             const centerX = obj.x + obj.width / 2;
             const centerY = obj.y + obj.height / 2;
-            const radius = obj.width / 2 + 5;
+            const radius = obj.width / 2;
             for (let box of playerBoxes) {
                 const closestX = Math.max(box.x, Math.min(centerX, box.x + box.width));
                 const closestY = Math.max(box.y, Math.min(centerY, box.y + box.height));
@@ -740,7 +775,7 @@ function checkCollision(player, obj) {
                 }
             }
             return false;
-        } else if (obj.shape === 2) {
+        } else if (obj.shape === 2) { // Triangle
             const v0 = { x: obj.x, y: obj.y + obj.height };
             const v1 = { x: obj.x + obj.width / 2, y: obj.y };
             const v2 = { x: obj.x + obj.width, y: obj.y + obj.height };
@@ -766,12 +801,13 @@ function checkCollision(player, obj) {
         }
     }
 
+    // For power-ups (which have a type)
     if (obj.type !== undefined) {
         const objBox = {
-            x: obj.x - 10,
-            y: obj.y + (obj.floatOffset || 0) - 10,
-            width: obj.width + 20,
-            height: obj.height + 20
+            x: obj.x,
+            y: obj.y + (obj.floatOffset || 0),
+            width: obj.width,
+            height: obj.height
         };
         for (let box of playerBoxes) {
             if (box.x < objBox.x + objBox.width &&
@@ -863,7 +899,6 @@ tokenDisplay.textContent = `Tokens: ${tokens}`;
 updateCharacterDisplay();
 displayHighScores();
 
-// Function to increase difficulty with each wave
 function increaseDifficulty() {
     console.log(`Difficulty increased for Wave ${currentWave}`);
 }
