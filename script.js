@@ -33,7 +33,7 @@ let shake = { duration: 0, intensity: 0, offsetX: 0, offsetY: 0 };
 let auraColor = '';
 let health = 3;
 let currentWave = 1;
-let nextWaveTime = 20; // Reduced from 30 to 20 seconds
+let nextWaveTime = 20;
 let selectedCharacter = null;
 let combo = 0;
 let comboMultiplier = 1;
@@ -51,9 +51,9 @@ let dashTimer = 0;
 let dashDistance = 75;
 let lastDirection = 'right';
 const characterData = [
-    { color: 'red', width: 50, height: 50 },
-    { color: 'blue', width: 50, height: 50 },
-    { color: 'green', width: 50, height: 50 }
+    { color: 'red', width: 100, height: 100 },
+    { color: 'blue', width: 100, height: 100 },
+    { color: 'green', width: 100, height: 100 }
 ];
 let currentCharacterIndex = 0;
 const slotOutcomes = [
@@ -67,8 +67,11 @@ let nextRunEffect = null;
 
 function preload() {
     console.log('Preload function called');
-    // Removed asset loading to avoid 404 errors
-    // Add back when actual assets are available
+    this.load.image('ship', 'ship.png');
+    this.load.spritesheet('heart', 'hearts.png', {
+        frameWidth: 256, // Updated to match actual frame size
+        frameHeight: 256 // Updated to match actual frame size
+    });
 }
 
 function create() {
@@ -94,21 +97,28 @@ function create() {
     this.keys.shift = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
     this.keys.space = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
+    // Create heart animation
+    this.anims.create({
+        key: 'heart_anim',
+        frames: this.anims.generateFrameNumbers('heart', { start: 0, end: 63 }),
+        frameRate: 10,
+        repeat: -1
+    });
+
     initBackground();
 }
 
 function update(time, delta) {
     console.log('Update function called');
-    if (gameOver) return; // Stop updates when game is over
+    if (gameOver) return;
 
     gameTime += delta / 1000;
 
-    // Check for wave progression based on time only
     if (gameTime >= nextWaveTime * currentWave) {
         currentWave++;
-        score += currentWave * 50; // Reward for surviving to a new wave
+        score += currentWave * 50;
         increaseDifficulty();
-        updateUIDisplays(); // Update to show new wave
+        updateUIDisplays();
         popUps.push({ text: `Wave ${currentWave}!`, x: 200, y: 300, life: 2 });
         console.log(`Advanced to Wave ${currentWave} at ${gameTime}s`);
     }
@@ -125,8 +135,7 @@ function update(time, delta) {
         if (this.keys.left.isDown && player.x > 0) {
             player.x -= 5;
             lastDirection = 'left';
-        }
-        if (this.keys.right.isDown && player.x < 400 - player.width) {
+        } else if (this.keys.right.isDown && player.x < 400 - player.width) {
             player.x += 5;
             lastDirection = 'right';
         }
@@ -144,7 +153,6 @@ function update(time, delta) {
             console.log('Dashed in direction:', lastDirection);
         }
 
-        // Fire projectiles with space bar
         if (this.keys.space.isDown && time - lastShotTime > 500) {
             const projectile = currentScene.add.rectangle(player.x + player.width / 2, player.y, 10, 20, 0xff0000);
             projectile.setOrigin(0.5, 0);
@@ -159,7 +167,6 @@ function update(time, delta) {
         debugText.setText(`Debug: X: ${player ? player.x : 'N/A'}, Y: ${player ? player.y : 'N/A'}, Wave: ${currentWave}`);
     }
 
-    // Move projectiles upward with homing behavior if active
     projectiles.forEach(projectile => {
         let effectiveSpeed = projectile.speed;
         if (homingActive && bananas.length > 0) {
@@ -196,9 +203,8 @@ function update(time, delta) {
         }
     });
 
-    // Move bananas downward with slowdown effect if active
     bananas.forEach(banana => {
-        let effectiveSpeed = banana.speed * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
+        let effectiveSpeed = banana.speed * (1 + Math.log2(Math.max(1, currentWave)) * 0.2);
         if (slowdownActive) effectiveSpeed *= 0.5;
         banana.obj.y += effectiveSpeed;
         banana.obj.x += banana.vx;
@@ -221,7 +227,6 @@ function update(time, delta) {
         }
     });
 
-    // Check collisions between projectiles and bananas with increased overlap
     projectiles.forEach(projectile => {
         bananas.forEach(banana => {
             const projectileBounds = {
@@ -240,9 +245,9 @@ function update(time, delta) {
                 projectileBounds.x + projectileBounds.width > bananaBounds.x &&
                 projectileBounds.y < bananaBounds.y + bananaBounds.height &&
                 projectileBounds.y + projectileBounds.height > bananaBounds.y) {
-                score += Math.round((doublePointsActive ? 20 : 10) * comboMultiplier); // Apply combo multiplier
+                score += Math.round((doublePointsActive ? 20 : 10) * comboMultiplier);
                 combo += 1;
-                comboMultiplier = 1 + (combo * 0.1); // Increment by 0.1 per combo
+                comboMultiplier = 1 + (combo * 0.1);
                 updateUIDisplays();
                 createParticles(banana.x, banana.y);
                 projectile.obj.destroy();
@@ -253,9 +258,8 @@ function update(time, delta) {
         });
     });
 
-    // Move coins downward
     coins.forEach(coin => {
-        coin.obj.y += 2 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
+        coin.obj.y += 2 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2);
         coin.x = coin.obj.x;
         coin.y = coin.obj.y;
         if (coin.obj.y > 600 + coin.height) {
@@ -263,9 +267,9 @@ function update(time, delta) {
             coins = coins.filter(c => c !== coin);
         }
         if (player && checkCollision(player, coin)) {
-            score += Math.round((doublePointsActive ? 20 : 10) * comboMultiplier); // Apply combo multiplier
+            score += Math.round((doublePointsActive ? 20 : 10) * comboMultiplier);
             combo += 1;
-            comboMultiplier = 1 + (combo * 0.1); // Increment by 0.1 per combo
+            comboMultiplier = 1 + (combo * 0.1);
             updateUIDisplays();
             createParticles(coin.x, coin.y);
             coin.obj.destroy();
@@ -273,9 +277,8 @@ function update(time, delta) {
         }
     });
 
-    // Move power-ups downward
     powerUps.forEach(powerUp => {
-        powerUp.obj.y += 1 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
+        powerUp.obj.y += 1 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2);
         powerUp.x = powerUp.obj.x;
         powerUp.y = powerUp.obj.y;
         if (powerUp.obj.y > 600 + powerUp.height) {
@@ -290,9 +293,8 @@ function update(time, delta) {
         }
     });
 
-    // Move health pickups downward
     healthPickups.forEach(healthPickup => {
-        healthPickup.obj.y += 1 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
+        healthPickup.obj.y += 1 * (1 + Math.log2(Math.max(1, currentWave)) * 0.2);
         healthPickup.x = healthPickup.obj.x;
         healthPickup.y = healthPickup.obj.y;
         if (healthPickup.obj.y > 600 + healthPickup.height) {
@@ -310,7 +312,6 @@ function update(time, delta) {
         }
     });
 
-    // Update particles
     particles.forEach(particle => {
         particle.x += particle.vx;
         particle.y += particle.vy;
@@ -320,7 +321,6 @@ function update(time, delta) {
         }
     });
 
-    // Render particles
     particles.forEach(particle => {
         const particleObj = currentScene.add.circle(particle.x, particle.y, particle.size, Phaser.Display.Color.HexStringToColor('#FFD700').color);
         particleObj.setAlpha(particle.life);
@@ -328,7 +328,6 @@ function update(time, delta) {
         currentScene.time.delayedCall(50, () => particleObj.destroy());
     });
 
-    // Update and render pop-ups
     popUps.forEach(popUp => {
         popUp.y -= 1;
         popUp.life -= 0.02;
@@ -347,7 +346,6 @@ function update(time, delta) {
         }
     });
 
-    // Move stars
     starOffsetY += baseStarSpeed;
     stars.forEach(star => {
         star.obj.y += baseStarSpeed;
@@ -357,7 +355,6 @@ function update(time, delta) {
         star.y = star.obj.y;
     });
 
-    // Move clouds
     cloudOffsetY += baseCloudSpeed;
     clouds.forEach(cloud => {
         cloud.obj.y += baseCloudSpeed;
@@ -379,14 +376,12 @@ function initPlayer() {
     }
     const charData = characterData[selectedCharacter];
     try {
-        player = currentScene.add.rectangle(200, 500, charData.width, charData.height, Phaser.Display.Color.HexStringToColor(charData.color).color);
+        player = currentScene.add.image(200, 500, 'ship');
         player.setOrigin(0.5, 0.5);
-        player.setStrokeStyle(2, 0xff0000);
         player.setDepth(1);
-        player.color = charData.color;
         player.width = charData.width;
         player.height = charData.height;
-        console.log('Player initialized at:', player.x, player.y, 'with color:', charData.color, 'bounds:', player.getBounds());
+        console.log('Player initialized at:', player.x, player.y, 'with bounds:', player.getBounds());
     } catch (error) {
         console.error('Failed to initialize player:', error);
     }
@@ -458,7 +453,6 @@ function updateUIDisplays() {
         heart.style.marginRight = '5px';
         healthDisplay.appendChild(heart);
     }
-    // Add wave display
     let waveDisplay = document.getElementById('waveDisplay');
     if (!waveDisplay) {
         waveDisplay = document.createElement('div');
@@ -545,8 +539,8 @@ function spawnBanana() {
     const width = type === 'normal' ? Math.random() * 40 + 20 : 40;
     const height = type === 'normal' ? Math.random() * 50 + 30 : 40;
     const isFast = Math.random() < 0.2;
-    const baseSpeed = isFast ? 6 : (type === 'splitter' ? 4 : 5); // Reduced fast banana speed from 8 to 6
-    const speed = baseSpeed * (1 + Math.log2(Math.max(1, currentWave)) * 0.2); // Adjusted speed scaling
+    const baseSpeed = isFast ? 6 : (type === 'splitter' ? 4 : 5);
+    const speed = baseSpeed * (1 + Math.log2(Math.max(1, currentWave)) * 0.2);
     const isBouncer = Math.random() < 0.2;
     const vx = isBouncer ? (Math.random() * 4 - 2) : 0;
     const banana = currentScene.add.rectangle(Math.random() * (400 - width), 0, width, height, 0xffff00);
@@ -609,14 +603,24 @@ function spawnHealthPickup() {
     if (gameOver) return;
     console.log('spawnHealthPickup called');
     if (healthPickups.length >= 2) return;
-    const healthPickup = currentScene.add.rectangle(Math.random() * (400 - 20), 0, 20, 20, 0xff0000);
+    const originalSize = 256; // Original frame size
+    const scaledSize = 40; // Desired display size
+    const scale = scaledSize / originalSize; // Scale factor (40 / 256 ≈ 0.15625)
+    const healthPickup = currentScene.add.sprite(
+        Math.random() * (400 - scaledSize) + scaledSize / 2, // Center within bounds
+        scaledSize / 2, // Start at top, accounting for scaled size
+        'heart'
+    );
+    healthPickup.setOrigin(0.5, 0.5);
+    healthPickup.setScale(scale); // Scale down to 40x40
     healthPickup.setDepth(1);
+    healthPickup.play('heart_anim');
     healthPickups.push({
         obj: healthPickup,
         x: healthPickup.x,
         y: healthPickup.y,
-        width: 20,
-        height: 20,
+        width: scaledSize,
+        height: scaledSize,
         floatOffset: 0
     });
     const interval = Math.max(5000, 15000 - (currentWave * 1000));
@@ -687,10 +691,10 @@ function activatePowerUp(type) {
 
 function checkCollision(player, obj) {
     const playerBoxes = playerCollisionMask.map(box => ({
-        x: player.x + box.x * (player.width / 50),
-        y: player.y + box.y * (player.height / 50),
-        width: box.width * (player.width / 50) + 10,
-        height: box.height * (player.height / 50) + 10
+        x: player.x + box.x * (player.width / 100),
+        y: player.y + box.y * (player.height / 100),
+        width: box.width * (player.width / 100) + 10,
+        height: box.height * (player.height / 100) + 10
     }));
 
     if (obj.shape === undefined && obj.type === undefined) {
@@ -861,6 +865,5 @@ displayHighScores();
 
 // Function to increase difficulty with each wave
 function increaseDifficulty() {
-    // Speed increase is now handled in the update loops with a non-linear formula
     console.log(`Difficulty increased for Wave ${currentWave}`);
 }
